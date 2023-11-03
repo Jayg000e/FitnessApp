@@ -1,0 +1,44 @@
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+
+<body>
+    <h1>Please login</h1>
+
+    <form id="loginForm">
+        <input type="text" name="username" placeholder="Username">
+        <input type="text" name="email" placeholder="Email">
+        <input type="submit" value="Login">
+    </form>
+
+    <p id="errorMessage"></p>
+
+    <script>
+        $(document).ready(function() {
+            $('#loginForm').submit(function(event) {
+                event.preventDefault();
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/login',
+                    data: $(this).serialize(),
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.success) {
+                            // If login is successful, store the username in localStorage
+                            localStorage.setItem('username', data.username);
+                            window.location.href = "/";  // Redirect to home page
+                        } else {
+                            // Display an error message
+                            $('#errorMessage').text(data.message);
+                        }
+                    },
+                    error: function() {
+                        $('#errorMessage').text('An error occurred. Please try again.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>

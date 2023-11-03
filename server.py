@@ -12,7 +12,7 @@ import os
   # accessible as a variable in index.html:
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response, abort
+from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -166,8 +166,24 @@ def another():
 
 @app.route('/login')
 def login():
-    abort(401)
-    this_is_never_executed()
+    # abort(401)
+    # this_is_never_executed()
+    return render_template("login.html")
+
+@app.route('/login', methods=['POST'])
+def checklogin():
+    submitted_username = request.form['username']
+    submitted_email = request.form['email']
+    # Raw SQL query to check if the username exists in the database
+    query = text("SELECT username FROM users WHERE username = :username AND email = :email")
+    result = g.conn.execute(query, {"username": submitted_username,"email": submitted_email}).fetchone()
+
+    if result:
+        # Username exists
+        return jsonify(success=True, username=submitted_username)
+    else:
+        # Username does not exist
+        return jsonify(success=False, message="Username not found")
 
 
 if __name__ == "__main__":
