@@ -4,7 +4,7 @@
 
 
 <body>
-    <h1>Please login</h1>
+    <h1>Already have an account? Please login</h1>
 
     <form id="loginForm">
         <input type="text" name="username" placeholder="Username">
@@ -13,6 +13,10 @@
     </form>
 
     <p id="errorMessage"></p>
+
+    <h1>Do not have an account? Register a new account</h1>
+    <a href="register">register</a>
+
 
     <script>
         $(document).ready(function() {
@@ -34,6 +38,7 @@
                         if (data.success) {
                             // If login is successful, redirect to the home page
                             window.location.href = "/";
+                            localStorage.setItem("username",data.username)
                         } else {
                             // If not successful, display an error message
                             $('#errorMessage').text(data.message);

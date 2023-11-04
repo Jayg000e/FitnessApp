@@ -1,0 +1,57 @@
+
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Groups</h1>
+    <ul>
+        {% for group in user_groups %}
+            <li>{{ group.groupname }} (ID: {{ group.groupid }}) - 
+                <a href="{{ url_for('group', groupid=group.groupid) }}">View Group</a>
+            </li>
+        {% else %}
+            <li>No groups found.</li>
+        {% endfor %}
+    </ul>
+    <div>
+        <h2>Add a New Group</h2>
+        <form action="{{ url_for('add_group') }}" method="post">
+            <input type="hidden" id="currentUser" name="currentUser">
+            <label for="newGroupId">GroupID:</label>
+            <input type="text" id="newGroupId" name="newGroupId" required>
+            
+            <button type="submit">Add Group</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <h1>Create a New Group</h1>
+    <form action="{{ url_for('create_group') }}" method="post">
+        <input type="hidden" id="currentUser2" name="currentUser2">
+        <label for="groupname">Group Name:</label>
+        <input type="text" id="groupname" name="groupname" required>
+        <button type="submit">Create Group</button>
+    </form>
+
+    <script>
+        $(document).ready(function() {
+            var username = localStorage.getItem('username');
+            if (username) {
+                $('#currentUser').val(username);
+                $('#currentUser2').val(username);
+            } else {
+                // Handle the case where there is no username in local storage
+                // Maybe redirect to login page or show an error
+            }
+        });
+    </script>
+    
+</body>
+

@@ -9,8 +9,8 @@
         <h2>Friends</h2>
         <ul>
             {% for friend in friends %}
-            <li> {{ friend[0] }} - 
-                <a href="{{ url_for('records', username=friend[0]) }}">View records</a></li>
+            <li>  
+                <a href="{{ url_for('records', username=friend[0]) }}">{{ friend[0] }} </a></li>
             {% else %}
             <li>No friends found</li>
             {% endfor %}
@@ -26,7 +26,15 @@
             
             <button type="submit">Add Friend</button>
         </form>
-        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
 
     <script>

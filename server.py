@@ -12,11 +12,12 @@ import os
   # accessible as a variable in index.html:
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify
-from sqlalchemy.exc import SQLAlchemyError
+from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify ,url_for, flash
+from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
+app.secret_key = 'jg4692'
 
 
 #
@@ -79,22 +80,48 @@ def teardown_request(exception):
 def index():
   return render_template("index.html")
 
-
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET','POST'])
 def login():
-    data = request.get_json()  
-    username = data['username']
-    email = data['email']
-    try:
-        query = text("SELECT username FROM users WHERE username = :username AND email = :email")
-        result = g.conn.execute(query, {"username": username, "email": email}).fetchone()
-        if result:
-            return jsonify(success=True, username=username)
-        else:
-            return jsonify(success=False, message="Username or email not found")
-    except SQLAlchemyError as e:
-        return jsonify(success=False, message="An error occurred: " + str(e)), 500
+    if request.method == "POST":
+      data = request.get_json()  
+      username = data['username']
+      email = data['email']
+      try:
+          query = text("SELECT username FROM users WHERE username = :username AND email = :email")
+          result = g.conn.execute(query, {"username": username, "email": email}).fetchone()
+          if result:
+              return jsonify(success=True, username=username)
+          else:
+              return jsonify(success=False, message="Username or email not found")
+      except SQLAlchemyError as e:
+          return jsonify(success=False, message="An error occurred: " + str(e)), 500
+    return render_template("login.html")
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        try:
+          # Retrieve form data
+          username = request.form['username']
+          email = request.form['email']
+          firstname = request.form['firstname']
+          lastname = request.form['lastname']
+          age = request.form['age']
+          gender = request.form['gender']
+          height = request.form['height']
+          g.conn.execute(text("""INSERT INTO Users (username, email,firstname,lastname,age,gender,height) 
+              VALUES (:username, :email, :firstname, :lastname, :age, :gender, :height) """), 
+              {"username": username, "email": email,"firstname":firstname,"lastname":lastname,"age":age,"gender":gender,"height":height})
+          g.conn.commit()
+          # After inserting the user, you can redirect to login page or somewhere else
+          flash('User registered successfully!', 'success')
+          return redirect(url_for('login'))
+        except:
+          flash('Invalid registration, try again with valid input', 'error')
+          return redirect(url_for('register'))
     
+    # If the request is GET, just render the registration form
+    return render_template('register.html')
 
 @app.route('/profile/<username>') 
 def profile(username): 
@@ -117,6 +144,17 @@ def friend(username):
     friends = g.conn.execute(text(" SELECT usernameb AS friend FROM Friends WHERE usernamea = :username"), {"username": username})
     friends = friends.fetchall()
     return render_template("friend.html", friends=friends)
+
+@app.route('/usergroup/<username>') 
+def usergroup(username): 
+    query = text("""
+        SELECT g.groupid, g.groupname 
+        FROM Groups g
+        JOIN UsersInGroups ug ON g.groupid = ug.groupid 
+        WHERE ug.username = :username
+    """)
+    user_groups = g.conn.execute(query, {"username": username}).fetchall()
+    return render_template("usergroup.html", user_groups=user_groups)
 
 @app.route('/group/<int:groupid>')
 def group(groupid):
@@ -239,9 +277,85 @@ def worldchannel():
     # Pass the list of records with their comments to the template
     return render_template('worldchannel.html', records_with_comments=records_with_comments)
 
+@app.route('/add_friend', methods=['POST'])
+def add_friend():
+    current_user_username = request.form['currentUser']
+    new_friend_username = request.form['newFriendUsername']
+    if current_user_username == new_friend_username:
+        # Optionally, flash a message to the user
+        flash('You cannot add yourself as a friend.', 'error')
+        return redirect(url_for('friend', username=current_user_username))
 
+    try:
+        query = text("""
+            INSERT INTO Friends (usernamea, usernameb) 
+            VALUES (:current_user_username, :new_friend_username)""")
+        g.conn.execute(query, {"current_user_username":current_user_username, "new_friend_username":new_friend_username})
+        g.conn.commit()
+        
+        # Optionally, flash a success message to the user
+        flash('Friend added successfully!', 'success')
 
+        # Redirect to the friend page of the current user
+        return redirect(url_for('friend', username=current_user_username))
 
+    except IntegrityError:
+        # Handle the unique constraint violation, if the friendship already exists
+        # Optionally, flash a message to the user
+        flash('This friendship already exists.', 'error')
+        return redirect(url_for('friend', username=current_user_username))
+
+    except Exception as e:
+        # Handle any other exception that occurs
+        # Optionally, flash a message to the user
+        flash('An error occurred while adding a friend.', 'error')
+        return redirect(url_for('friend', username=current_user_username))
+    
+@app.route('/add_group', methods=['POST'])
+def add_group():
+    current_user_username = request.form['currentUser']
+    newGroupId = request.form['newGroupId']
+    # Ensure a group name was provided
+    if not newGroupId:
+      return redirect(url_for('usergroup', username=current_user_username))
+    try:
+      query = text("INSERT INTO UsersInGroups (groupid,username) VALUES (:groupid,:username) ")
+      g.conn.execute(query,{"groupid":newGroupId,"username":current_user_username})
+      g.conn.commit()
+        # Optionally, flash a success message to the user
+      flash('Group added successfully!', 'success')
+      return redirect(url_for('usergroup', username=current_user_username))
+      
+    except IntegrityError:
+        # Handle the unique constraint violation, if the friendship already exists
+        # Optionally, flash a message to the user
+        flash('You have already been in this group.', 'error')
+        return redirect(url_for('usergroup', username=current_user_username))
+    
+@app.route('/create_group', methods=['POST'])
+def create_group():
+    print(request.form,"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+    current_user_username = request.form['currentUser2']
+    groupname = request.form['groupname']
+    # Ensure a group name was provided
+    if not groupname:
+      return redirect(url_for('usergroup', username=current_user_username))
+    try:
+       # Prepare the INSERT statement with the RETURNING clause
+      query = text("INSERT INTO Groups (groupname) VALUES (:groupname) RETURNING groupid")
+      result = g.conn.execute(query, {"groupname": groupname})
+      
+      # Fetch the generated groupid
+      groupid = result.fetchone()[0]
+      join_group_query = text("INSERT INTO UsersInGroups (groupid,username) VALUES (:groupid,:username) ")
+      g.conn.execute(join_group_query,{"groupid":groupid,"username":current_user_username})
+      g.conn.commit()
+      flash('Group created successfully!', 'success')
+      return redirect(url_for('usergroup', username=current_user_username))
+    except:
+      flash('Error creating group', 'error')
+      return redirect(url_for('usergroup', username=current_user_username))
+      
 
 if __name__ == "__main__":
   import click

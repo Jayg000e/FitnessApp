@@ -22,8 +22,8 @@
         <h2>Friends</h2>
         <ul>
             {% for friend in friends %}
-            <li> {{ friend[0] }} - 
-                <a href="{{ url_for('profile', username=friend[0]) }}">View Profile</a></li>
+            <li> 
+                <a href="{{ url_for('profile', username=friend[0]) }}">{{ friend[0] }}</a></li>
             {% else %}
             <li>No friends found</li>
             {% endfor %}
@@ -34,8 +34,8 @@
         <h2>Groups</h2>
         <ul>
             {% for group in groups %}
-            <li> {{ group[0] }} - 
-                <a href="{{ url_for('group', groupid=group[1]) }}">View Group</a>
+            <li> 
+                <a href="{{ url_for('group', groupid=group[1]) }}">{{ group[0] }}</a>
             </li>
             {% else %}
             <li>No group for this user found</li>
