@@ -1,0 +1,27 @@
+
+<head>
+    <title>{{ username }}'s Exercises</title>
+</head>
+<body>
+    <h1>{{ username }}'s Favorite Exercises</h1>
+    {% for exercise in favorite_exercises %}
+        <div>
+            <strong>{{ exercise.exercisename }}</strong> - {{ exercise.muscle }} - Difficulty: {{ exercise.difficulty }}
+            <p>{{ exercise.description }}</p>
+        </div>
+    {% endfor %}
+
+    <h2>Other Exercises</h2>
+    <form action="/add_favorites" method="post">
+        {% for exercise in non_favorite_exercises %}
+            <div>
+                <input type="checkbox" name="favorite" value="{{ exercise.exercisename }}">
+                <strong>{{ exercise.exercisename }}</strong> - {{ exercise.muscle }} - Difficulty: {{ exercise.difficulty }}
+                <p>{{ exercise.description }}</p>
+            </div>
+        {% endfor %}
+        <input type="hidden" name="username" value="{{ username }}">
+        <input type="submit" value="Add to Favorites">
+    </form>
+</body>
+

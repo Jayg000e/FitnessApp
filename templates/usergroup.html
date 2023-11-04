@@ -16,7 +16,7 @@
     <div>
         <h2>Add a New Group</h2>
         <form action="{{ url_for('add_group') }}" method="post">
-            <input type="hidden" id="currentUser" name="currentUser">
+            <input type="hidden" name="currentUser" value="{{ username }}">
             <label for="newGroupId">GroupID:</label>
             <input type="text" id="newGroupId" name="newGroupId" required>
             
@@ -34,24 +34,12 @@
     </div>
     <h1>Create a New Group</h1>
     <form action="{{ url_for('create_group') }}" method="post">
-        <input type="hidden" id="currentUser2" name="currentUser2">
+        <input type="hidden" name="currentUser2" value="{{ username }}">
         <label for="groupname">Group Name:</label>
         <input type="text" id="groupname" name="groupname" required>
         <button type="submit">Create Group</button>
     </form>
 
-    <script>
-        $(document).ready(function() {
-            var username = localStorage.getItem('username');
-            if (username) {
-                $('#currentUser').val(username);
-                $('#currentUser2').val(username);
-            } else {
-                // Handle the case where there is no username in local storage
-                // Maybe redirect to login page or show an error
-            }
-        });
-    </script>
     
 </body>
 

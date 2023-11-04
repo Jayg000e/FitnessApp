@@ -139,11 +139,40 @@ def profile(username):
     groups = groups.fetchall()
     return render_template("profile.html", profile=profile,friends=friends,groups=groups)
 
+@app.route('/exercise/<username>') 
+def exercise(username):
+    # Fetch favorite exercises
+    favorite_exercises_query = text('''
+        SELECT e.exercisename, e.muscle, e.description, e.difficulty
+        FROM Exercises e
+        JOIN Favorites f ON f.exercisename = e.exercisename
+        WHERE f.username = :username;
+    ''')
+
+    # Fetch non-favorite exercises
+    non_favorite_exercises_query = text('''
+        SELECT e.exercisename, e.muscle, e.description, e.difficulty
+        FROM Exercises e
+        WHERE e.exercisename NOT IN (
+            SELECT exercisename
+            FROM Favorites
+            WHERE username = :username
+        );
+    ''')
+
+    # Execute the queries
+    favorite_exercises = g.conn.execute(favorite_exercises_query, {"username": username}).fetchall()
+    non_favorite_exercises = g.conn.execute(non_favorite_exercises_query, {"username": username}).fetchall()
+    
+    # Render the template with separate lists for favorites and non-favorites
+    return render_template("exercise.html", username=username, favorite_exercises=favorite_exercises, non_favorite_exercises=non_favorite_exercises)
+
+
 @app.route('/friend/<username>') 
 def friend(username): 
     friends = g.conn.execute(text(" SELECT usernameb AS friend FROM Friends WHERE usernamea = :username"), {"username": username})
     friends = friends.fetchall()
-    return render_template("friend.html", friends=friends)
+    return render_template("friend.html", friends=friends,username=username)
 
 @app.route('/usergroup/<username>') 
 def usergroup(username): 
@@ -154,7 +183,7 @@ def usergroup(username):
         WHERE ug.username = :username
     """)
     user_groups = g.conn.execute(query, {"username": username}).fetchall()
-    return render_template("usergroup.html", user_groups=user_groups)
+    return render_template("usergroup.html", user_groups=user_groups,username=username)
 
 @app.route('/group/<int:groupid>')
 def group(groupid):
@@ -279,6 +308,7 @@ def worldchannel():
 
 @app.route('/add_friend', methods=['POST'])
 def add_friend():
+    print("hellllllllllllllllll",request.form)
     current_user_username = request.form['currentUser']
     new_friend_username = request.form['newFriendUsername']
     if current_user_username == new_friend_username:
@@ -326,15 +356,14 @@ def add_group():
       flash('Group added successfully!', 'success')
       return redirect(url_for('usergroup', username=current_user_username))
       
-    except IntegrityError:
+    except:
         # Handle the unique constraint violation, if the friendship already exists
         # Optionally, flash a message to the user
-        flash('You have already been in this group.', 'error')
+        flash('An error occured, please try to add another group.', 'error')
         return redirect(url_for('usergroup', username=current_user_username))
     
 @app.route('/create_group', methods=['POST'])
 def create_group():
-    print(request.form,"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
     current_user_username = request.form['currentUser2']
     groupname = request.form['groupname']
     # Ensure a group name was provided
@@ -356,6 +385,30 @@ def create_group():
       flash('Error creating group', 'error')
       return redirect(url_for('usergroup', username=current_user_username))
       
+@app.route('/add_favorites', methods=['POST'])
+def add_favorites():
+    username = request.form['username']
+    selected_exercises = request.form.getlist('favorite')  # 'favorite' is the name of the checkboxes
+    
+    # Check if any exercises were selected
+    if not selected_exercises:
+        flash('No exercises selected to add to favorites.', 'warning')
+        return redirect(url_for('exercise', username=username))
+
+    try:
+        for exercisename in selected_exercises:
+            insert_favorite_query = text('''
+                INSERT INTO Favorites (username, exercisename) VALUES (:username, :exercisename)
+            ''')
+            g.conn.execute(insert_favorite_query, {"username": username, "exercisename": exercisename})
+        g.conn.commit()
+        flash('Selected exercises added to favorites.', 'success')
+    except Exception as e:
+        # If there is any exception, rollback the transaction
+        g.conn.rollback()
+        flash('An error occurred while adding to favorites.', 'error')
+    # Redirect back to the exercises page
+    return redirect(url_for('exercise', username=username))
 
 if __name__ == "__main__":
   import click
