@@ -1,0 +1,46 @@
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+
+<body>
+   
+    <div>
+        <h2>Friends</h2>
+        <ul>
+            {% for friend in friends %}
+            <li> {{ friend[0] }} - 
+                <a href="{{ url_for('records', username=friend[0]) }}">View records</a></li>
+            {% else %}
+            <li>No friends found</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h2>Add a New Friend</h2>
+        <form action="{{ url_for('add_friend') }}" method="post">
+            <input type="hidden" id="currentUser" name="currentUser">
+            <label for="newFriendUsername">Friend's Username:</label>
+            <input type="text" id="newFriendUsername" name="newFriendUsername" required>
+            
+            <button type="submit">Add Friend</button>
+        </form>
+        
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var username = localStorage.getItem('username');
+            if (username) {
+                $('#currentUser').val(username);
+            } else {
+                // Handle the case where there is no username in local storage
+                // Maybe redirect to login page or show an error
+            }
+        });
+    </script>
+
+
+        
+</body>

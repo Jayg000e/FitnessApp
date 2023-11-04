@@ -1,0 +1,53 @@
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+
+<body>
+    <h1>Profile</h1>
+    <h1>User Profile: {{ profile['username'] }}</h1>
+    <table>
+        <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+        </tr>
+        {% for key, value in profile.items() %}
+        <tr>
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div>
+        <h2>Friends</h2>
+        <ul>
+            {% for friend in friends %}
+            <li> {{ friend[0] }} - 
+                <a href="{{ url_for('profile', username=friend[0]) }}">View Profile</a></li>
+            {% else %}
+            <li>No friends found</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h2>Groups</h2>
+        <ul>
+            {% for group in groups %}
+            <li> {{ group[0] }} - 
+                <a href="{{ url_for('group', groupid=group[1]) }}">View Group</a>
+            </li>
+            {% else %}
+            <li>No group for this user found</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h2>Records</h2>
+        <a href="{{ url_for('records', username=profile['username']) }}">View Record</a>
+    </div>
+        
+</body>
+
+

@@ -1,0 +1,16 @@
+<body>
+    {% for record, comments in records_with_comments %}
+        <div class="record">
+            <h3>Record ID: {{ record.recordid }} - Note: {{ record.note }}</h3>
+            <p>Time: {{ record.time }}</p>
+            <h4>Comments:</h4>
+            <ul>
+                {% for comment in comments %}
+                    <li>
+                        <strong>{{ comment.commentuser }}</strong> ({{ comment.time }}): {{ comment.content }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+</body>

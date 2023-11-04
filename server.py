@@ -13,6 +13,7 @@ import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify
+from sqlalchemy.exc import SQLAlchemyError
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -74,116 +75,172 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
-
-#
-# @app.route is a decorator around index() that means:
-#   run index() whenever the user tries to access the "/" path using a GET request
-#
-# If you wanted the user to go to, for example, localhost:8111/foobar/ with POST or GET then you could use:
-#
-#       @app.route("/foobar/", methods=["POST", "GET"])
-#
-# PROTIP: (the trailing / in the path is important)
-#
-# see for routing: https://flask.palletsprojects.com/en/2.0.x/quickstart/?highlight=routing
-# see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
-#
 @app.route('/')
 def index():
-  """
-  request is a special object that Flask provides to access web request information:
-
-  request.method:   "GET" or "POST"
-  request.form:     if the browser submitted a form, this contains the data in the form
-  request.args:     dictionary of URL arguments, e.g., {a:1, b:2} for http://localhost?a=1&b=2
-
-  See its API: https://flask.palletsprojects.com/en/2.0.x/api/?highlight=incoming%20request%20data
-
-  """
-
-  # DEBUG: this is debugging code to see what request looks like
-  print(request.args)
-
-
-  #
-  # example of a database query
-  #
-
-  #
-  # Flask uses Jinja templates, which is an extension to HTML where you can
-  # pass data to a template and dynamically generate HTML based on the data
-  # (you can think of it as simple PHP)
-  # documentation: https://realpython.com/primer-on-jinja-templating/
-  #
-  # You can see an example template in templates/index.html
-  #
-  # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be
-  # accessible as a variable in index.html:
-  #
-  #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-  #     <div>{{data}}</div>
-  #
-  #     # creates a <div> tag for each element in data
-  #     # will print:
-  #     #
-  #     #   <div>grace hopper</div>
-  #     #   <div>alan turing</div>
-  #     #   <div>ada lovelace</div>
-  #     #
-  #     {% for n in data %}
-  #     <div>{{n}}</div>
-  #     {% endfor %}
-  #
-
-
-  #
-  # render_template looks in the templates/ folder for files.
-  # for example, the below file reads template/index.html
-  #
   return render_template("index.html")
 
-#
-# This is an example of a different path.  You can see it at:
-#
-#     localhost:8111/another
-#
-# Notice that the function name is another() rather than index()
-# The functions for each app.route need to have different names
-#
-@app.route('/another')
-def another():
-  return render_template("another.html")
-
-
-# Example of adding new data to the database
-# @app.route('/add', methods=['POST'])
-# def add():
-#   name = request.form['name']
-#   g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
-#   return redirect('/')
-
-
-@app.route('/login')
-def login():
-    # abort(401)
-    # this_is_never_executed()
-    return render_template("login.html")
 
 @app.route('/login', methods=['POST'])
-def checklogin():
-    submitted_username = request.form['username']
-    submitted_email = request.form['email']
-    # Raw SQL query to check if the username exists in the database
-    query = text("SELECT username FROM users WHERE username = :username AND email = :email")
-    result = g.conn.execute(query, {"username": submitted_username,"email": submitted_email}).fetchone()
+def login():
+    data = request.get_json()  
+    username = data['username']
+    email = data['email']
+    try:
+        query = text("SELECT username FROM users WHERE username = :username AND email = :email")
+        result = g.conn.execute(query, {"username": username, "email": email}).fetchone()
+        if result:
+            return jsonify(success=True, username=username)
+        else:
+            return jsonify(success=False, message="Username or email not found")
+    except SQLAlchemyError as e:
+        return jsonify(success=False, message="An error occurred: " + str(e)), 500
+    
 
-    if result:
-        # Username exists
-        return jsonify(success=True, username=submitted_username)
-    else:
-        # Username does not exist
-        return jsonify(success=False, message="Username not found")
+@app.route('/profile/<username>') 
+def profile(username): 
+    profile = g.conn.execute(text("SELECT * FROM users WHERE username = :username"), {"username": username})
+    profile = dict(zip(profile.keys(), profile.fetchone()))
+    friends = g.conn.execute(text(" SELECT usernameb AS friend FROM Friends WHERE usernamea = :username"), {"username": username})
+    friends = friends.fetchall()
+    group_query = text("""
+            SELECT g.groupname, g.groupid
+            FROM UsersInGroups ug
+            JOIN Groups g ON ug.groupid = g.groupid
+            WHERE ug.username = :username
+        """)
+    groups = g.conn.execute(group_query, {"username": username})
+    groups = groups.fetchall()
+    return render_template("profile.html", profile=profile,friends=friends,groups=groups)
+
+@app.route('/friend/<username>') 
+def friend(username): 
+    friends = g.conn.execute(text(" SELECT usernameb AS friend FROM Friends WHERE usernamea = :username"), {"username": username})
+    friends = friends.fetchall()
+    return render_template("friend.html", friends=friends)
+
+@app.route('/group/<int:groupid>')
+def group(groupid):
+    # Retrieve the group's name
+    group_name = g.conn.execute(text("SELECT groupname FROM Groups WHERE groupid = :groupid"), {"groupid": groupid})
+    group_name = group_name.fetchone()
+
+    # If group is found, retrieve the users
+    if group_name:
+        users_query = text("""
+            SELECT u.username, u.firstname, u.lastname
+            FROM UsersInGroups ug
+            JOIN Users u ON ug.username = u.username
+            WHERE ug.groupid = :groupid
+        """)
+        users = g.conn.execute(users_query, {"groupid": groupid})
+        users = users.fetchall()
+        return render_template('group.html', users=users, groupid=groupid, groupname=group_name[0])
+    
+@app.route('/records/<username>')
+def records(username):
+  # Create a dictionary to hold all the user's records
+  user_records = {
+      'workout_records': [],
+      'nutrition_records': [],
+      'health_records': [],
+      'goal_records': []
+  }
+  
+  # Retrieve workout records
+  workout_records_query = text("""
+      SELECT wr.*, e.exercisename
+      FROM WorkoutRecordsWorkOnExercises wr
+      JOIN Exercises e ON wr.exercisename = e.exercisename
+      WHERE wr.username = :username
+  """)
+  workout_records_result = g.conn.execute(workout_records_query, {"username": username})
+  user_records['workout_records'] = workout_records_result.fetchall()
+  
+  # Retrieve nutrition records
+  nutrition_records_query = text("""
+      SELECT *
+      FROM NutritionRecords
+      WHERE username = :username
+  """)
+  nutrition_records_result = g.conn.execute(nutrition_records_query, {"username": username})
+  user_records['nutrition_records'] = nutrition_records_result.fetchall()
+
+  # Retrieve health records
+  health_records_query = text("""
+      SELECT *
+      FROM HealthRecords
+      WHERE username = :username
+  """)
+  health_records_result = g.conn.execute(health_records_query, {"username": username})
+  user_records['health_records'] = health_records_result.fetchall()
+
+  # Retrieve goal records
+  goal_records_query = text("""
+      SELECT *
+      FROM GoalRecords
+      WHERE username = :username
+  """)
+  goal_records_result = g.conn.execute(goal_records_query, {"username": username})
+  user_records['goal_records'] = goal_records_result.fetchall()
+
+  for record_type, records in user_records.items():
+    transformed_records=[]
+    for record in records:
+        # Fetch the comments for each record
+        comments_query = text("""
+            SELECT *
+            FROM CommentsMakeCommentsOn c
+            WHERE c.recordid = :recordid AND c.recorduser = :username
+            ORDER BY c.time DESC
+        """)
+        print(record.recordid,record.username)
+        comments_result = g.conn.execute(comments_query, {
+            "recordid": record.recordid,
+            "username": record.username  
+        })
+        transformed_records.append((record,comments_result.fetchall()))
+    user_records[record_type]=transformed_records
+
+  # Render all the records using the template
+  return render_template('records.html', username=username, records=user_records)
+
+@app.route('/worldchannel') 
+def worldchannel(): 
+    # Retrieve all records for the given username
+    records_query = text("""
+    SELECT rk.recordid, rk.note, rk.time, rk.username
+    FROM RecordKeep rk
+    ORDER BY rk.time DESC;
+    """)
+    records = g.conn.execute(records_query)
+    records = records.fetchall()
+
+    # For each record, fetch the associated comments
+    comments_query_template = text("""
+    SELECT cm.*
+    FROM CommentsMakeCommentsOn cm
+    WHERE cm.recordid = :recordid AND cm.recorduser = :username
+    ORDER BY cm.time DESC;
+    """)
+
+    # Create a dictionary to hold records and their comments
+    records_with_comments = []
+    for record in records:
+        # Fetch comments for the current record
+        comments_result = g.conn.execute(comments_query_template, {
+            "recordid": record.recordid,
+            "username": record.username  # assuming 'username' is the same for RecordKeep and CommentsMakeCommentsOn
+        })
+        comments = comments_result.fetchall()
+        
+        # Append the record and its comments as a tuple to the list
+        records_with_comments.append((record, comments))
+
+    # Pass the list of records with their comments to the template
+    return render_template('worldchannel.html', records_with_comments=records_with_comments)
+
+
+
 
 
 if __name__ == "__main__":

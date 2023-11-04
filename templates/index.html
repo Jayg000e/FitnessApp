@@ -1,21 +1,31 @@
 <html>
-  <style>
-    body{ 
-      font-size: 15pt;
-      font-family: arial;
-    }
-  </style>
-
+  
+<head>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
 
 <body>
   <h1>Some famous Computer Scientists</h1>
-  <div>{{data}}</div>
+  
 
-
-<p><a href="another">Go to the other page</a></p>
+  <p><a href="another">Go to the other page</a></p>
+  <p><a id="profileLink" href="#">Profile Page</a></p>
+  <p><a id="friendLink" href="#">Friend Page</a></p>
+  <p><a href="worldchannel">worldchannel</a></p>
 
 
 </body>
 
+<script>
+  $(document).ready(function() {
+    var username = localStorage.getItem('username');
+    if (username) {
+        var encodedUsername = encodeURIComponent(username);
+        $('#profileLink').attr('href', '/profile/' + encodedUsername);
+        $('#friendLink').attr('href', '/friend/' + encodedUsername);
+    }
+  });
+
+</script>
 
 </html>
