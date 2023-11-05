@@ -116,7 +116,7 @@ def register():
               VALUES (:username, :email, :firstname, :lastname, :age, :gender, :height) """), 
               {"username": username, "email": email,"firstname":firstname,"lastname":lastname,"age":age,"gender":gender,"height":height})
           g.conn.commit()
-          # After inserting the user, you can redirect to login page or somewhere else
+          # After inserting the user, redirect to login page 
           flash('User registered successfully!', 'success')
           return redirect(url_for('login'))
         except:
@@ -416,7 +416,6 @@ def add_friend():
     current_user_username = request.form['currentUser']
     new_friend_username = request.form['newFriendUsername']
     if current_user_username == new_friend_username:
-        # Optionally, flash a message to the user
         flash('You cannot add yourself as a friend.', 'error')
         return redirect(url_for('friend', username=current_user_username))
 
@@ -426,8 +425,6 @@ def add_friend():
             VALUES (:current_user_username, :new_friend_username)""")
         g.conn.execute(query, {"current_user_username":current_user_username, "new_friend_username":new_friend_username})
         g.conn.commit()
-        
-        # Optionally, flash a success message to the user
         flash('Friend added successfully!', 'success')
 
         # Redirect to the friend page of the current user
@@ -435,13 +432,11 @@ def add_friend():
 
     except IntegrityError:
         # Handle the unique constraint violation, if the friendship already exists
-        # Optionally, flash a message to the user
         flash('This friendship already exists.', 'error')
         return redirect(url_for('friend', username=current_user_username))
 
     except Exception as e:
         # Handle any other exception that occurs
-        # Optionally, flash a message to the user
         flash('An error occurred while adding a friend.', 'error')
         return redirect(url_for('friend', username=current_user_username))
     
@@ -456,13 +451,11 @@ def add_group():
       query = text("INSERT INTO UsersInGroups (groupid,username) VALUES (:groupid,:username) ")
       g.conn.execute(query,{"groupid":newGroupId,"username":current_user_username})
       g.conn.commit()
-        # Optionally, flash a success message to the user
       flash('Group added successfully!', 'success')
       return redirect(url_for('usergroup', username=current_user_username))
       
     except:
         # Handle the unique constraint violation, if the friendship already exists
-        # Optionally, flash a message to the user
         flash('An error occured, please try to add another group.', 'error')
         return redirect(url_for('usergroup', username=current_user_username))
     
@@ -628,7 +621,7 @@ def add_goal_record(username):
         # Combine the date and time to form a complete datetime object
         deadline = datetime.combine(datetime.strptime(deadline_date, '%Y-%m-%d'), deadline_time)
         
-        # Convert the datetime to a string in the format required by your database
+        # Convert the datetime to a string in the format required by the database
         deadline_timestamp = deadline.strftime('%Y-%m-%d %H:%M:%S')
 
         g.conn.execute(
