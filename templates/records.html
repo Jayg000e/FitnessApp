@@ -107,7 +107,21 @@
             </ul>
         {% endfor %}
     </ul>
+
+    <div id="advise" style="display: none;">
+        <div>Please wait patiently for 15s after pressing the button ... Your personalize advises take some time to be generated... </div>
+        <form action="{{ url_for('get_advise') }}"  method="post">
+            <input type="hidden" name="recordUser" value="{{ username }}">
+            <input type="hidden" name="record" value="{{ records }}">
+            <button type="submit">Get advise</button>
+        </form>
+        <p>{{ advise }}</p>
+    </div>
     
+   
+
+
+
     <a href="{{ url_for('add_workout_record', username = username) }}" style="display: none;" class="addrecord">Add Workout Record</a><br>
     <a href="{{ url_for('add_health_record', username = username) }}" style="display: none;" class="addrecord">Add Health Record</a><br>
     <a href="{{ url_for('add_goal_record', username = username) }}" style="display: none;" class="addrecord">Add Goal Record</a><br>
@@ -120,6 +134,7 @@
           $('.commentUser').val(username)
           if(username=="{{username}}"){
             $('.addRecord').show()
+            $('#advise').show()
           }
         });
     </script>

@@ -15,6 +15,7 @@ from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify ,url_for, flash
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 from datetime import datetime, time
+from responseGenerator import responseGenerator
 
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -612,6 +613,72 @@ def add_workout_record(username):
       return render_template('workoutrecord.html',username=username,exercises=exercises) 
 
 
+@app.route('/get_advise',methods=['POST']) 
+def get_advise(): 
+  username=request.form["recordUser"]
+  user_records = {
+      'workout_records': [],
+      'nutrition_records': [],
+      'health_records': [],
+      'goal_records': []
+  }
+  
+  # Retrieve workout records
+  workout_records_query = text("""
+      SELECT wr.*, e.exercisename
+      FROM WorkoutRecordsWorkOnExercises wr
+      JOIN Exercises e ON wr.exercisename = e.exercisename
+      WHERE wr.username = :username
+  """)
+  workout_records_result = g.conn.execute(workout_records_query, {"username": username})
+  user_records['workout_records'] = workout_records_result.fetchall()
+  
+  # Retrieve nutrition records
+  nutrition_records_query = text("""
+      SELECT *
+      FROM NutritionRecords
+      WHERE username = :username
+  """)
+  nutrition_records_result = g.conn.execute(nutrition_records_query, {"username": username})
+  user_records['nutrition_records'] = nutrition_records_result.fetchall()
+
+  # Retrieve health records
+  health_records_query = text("""
+      SELECT *
+      FROM HealthRecords
+      WHERE username = :username
+  """)
+  health_records_result = g.conn.execute(health_records_query, {"username": username})
+  user_records['health_records'] = health_records_result.fetchall()
+
+  # Retrieve goal records
+  goal_records_query = text("""
+      SELECT *
+      FROM GoalRecords
+      WHERE username = :username
+  """)
+  goal_records_result = g.conn.execute(goal_records_query, {"username": username})
+  user_records['goal_records'] = goal_records_result.fetchall()
+
+  for record_type, records in user_records.items():
+    transformed_records=[]
+    for record in records:
+        # Fetch the comments for each record
+        comments_query = text("""
+            SELECT *
+            FROM CommentsMakeCommentsOn c
+            WHERE c.recordid = :recordid AND c.recorduser = :username
+            ORDER BY c.time DESC
+        """)
+        print(record.recordid,record.username)
+        comments_result = g.conn.execute(comments_query, {
+            "recordid": record.recordid,
+            "username": record.username  
+        })
+        transformed_records.append((record,comments_result.fetchall()))
+    user_records[record_type]=transformed_records
+  advise=responseGenerator(user_records)
+  return render_template('records.html', username=request.form["recordUser"], records=user_records,advise=advise)
 
 
 if __name__ == "__main__":
