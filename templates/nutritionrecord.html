@@ -1,0 +1,13 @@
+<body>
+    <form action="{{ url_for('add_nutrition_record', username = username) }}"  method="post">
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description">
+        <label for="calorie">Calorie:</label>
+        <input type="text" id="calorie" name="calorie" required>
+        <label for="protein">Protein:</label>
+        <input type="text" id="protein" name="protein" required>
+        <label for="note">Note:</label>
+        <input type="text" id="note" name="note">
+        <button type="submit">Record</button>
+    </form>
+</body>

@@ -1,7 +1,9 @@
 <head>
     <title>Records for {{ username }}</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+    <p><a href="/">Home</a></p>
     <h1>Records for {{ username }}</h1>
 
     <h2>Workout Records</h2>
@@ -17,6 +19,15 @@
                     </li>
                 {% endfor %}
             </ul>
+            <form action="{{ url_for('comment') }}" method="post">
+                
+                <input type="hidden" name="recordUser" value="{{ username }}">
+                <input type="hidden" name="recordId" value="{{ record.recordid }}">
+                <input type="hidden" name="commentUser" class="commentUser">
+                <label for="content">Content:</label>
+                <input type="text" id="content" name="content" required>
+                <button type="submit">Comment</button>
+            </form>
         {% endfor %}
     </ul>
 
@@ -33,6 +44,15 @@
                     </li>
                 {% endfor %}
             </ul>
+            <form action="{{ url_for('comment') }}" method="post">
+                
+                <input type="hidden" name="recordUser" value="{{ username }}">
+                <input type="hidden" name="recordId" value="{{ record.recordid }}">
+                <input type="hidden" name="commentUser" class="commentUser">
+                <label for="content">Content:</label>
+                <input type="text" id="content" name="content" required>
+                <button type="submit">Comment</button>
+            </form>
         {% endfor %}
     </ul>
 
@@ -48,6 +68,15 @@
                         <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                     </li>
                 {% endfor %}
+                <form action="{{ url_for('comment') }}" method="post">
+                
+                    <input type="hidden" name="recordUser" value="{{ username }}">
+                    <input type="hidden" name="recordId" value="{{ record.recordid }}">
+                    <input type="hidden" name="commentUser" class="commentUser">
+                    <label for="content">Content:</label>
+                    <input type="text" id="content" name="content" required>
+                    <button type="submit">Comment</button>
+                </form>
             </ul>
         
         {% endfor %}  
@@ -66,7 +95,32 @@
                         <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                     </li>
                 {% endfor %}
+                <form action="{{ url_for('comment') }}" method="post">
+                
+                    <input type="hidden" name="recordUser" value="{{ username }}">
+                    <input type="hidden" name="recordId" value="{{ record.recordid }}">
+                    <input type="hidden" name="commentUser" class="commentUser">
+                    <label for="content">Content:</label>
+                    <input type="text" id="content" name="content" required>
+                    <button type="submit">Comment</button>
+                </form>
             </ul>
         {% endfor %}
     </ul>
+    
+    <a href="{{ url_for('add_workout_record', username = username) }}" style="display: none;" class="addrecord">Add Workout Record</a><br>
+    <a href="{{ url_for('add_health_record', username = username) }}" style="display: none;" class="addrecord">Add Health Record</a><br>
+    <a href="{{ url_for('add_goal_record', username = username) }}" style="display: none;" class="addrecord">Add Goal Record</a><br>
+    <a href="{{ url_for('add_nutrition_record', username = username) }}" style="display: none;" class="addrecord">Add Nutrition Record</a><br>
+    
+    
+    <script>
+        $(document).ready(function() {
+          var username = localStorage.getItem('username');
+          $('.commentUser').val(username)
+          if(username=="{{username}}"){
+            $('.addRecord').show()
+          }
+        });
+    </script>
 </body>

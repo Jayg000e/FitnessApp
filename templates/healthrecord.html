@@ -1,0 +1,15 @@
+<body>
+    <form action="{{ url_for('add_health_record', username = username) }}"  method="post">
+        <label for="weight">weight:</label>
+        <input type="text" id="weight" name="weight" required>
+        <label for="bodyfatpercentage">bodyfatpercentage:</label>
+        <input type="text" id="bodyfatpercentage" name="bodyfatpercentage">
+        <label for="bloodpressure">bloodpressure:</label>
+        <input type="text" id="bloodpressure" name="bloodpressure">
+        <label for="restingheartrate">restingheartrate:</label>
+        <input type="text" id="restingheartrate" name="restingheartrate">
+        <label for="note">Note:</label>
+        <input type="text" id="note" name="note">
+        <button type="submit">Record</button>
+    </form>
+</body>

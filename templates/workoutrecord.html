@@ -1,0 +1,22 @@
+<body>
+    <form action="{{ url_for('add_workout_record', username = username) }}"  method="post">
+        <label for="sets">Sets:</label>
+        <input type="number" id="sets" name="sets" required>
+
+        <label for="repetition">Repetitions:</label>
+        <input type="number" id="repetition" name="repetition">
+
+        <label for="weightlifted">Weight Lifted:</label>
+        <input type="number" step="0.01" id="weightlifted" name="weightlifted">
+
+        <label for="exercisename">Exercise Name:</label>
+        <select id="exercisename" name="exercisename" required>
+            {% for exercise in exercises %}
+                <option value="{{ exercise.exercisename }}">{{ exercise.exercisename }}</option>
+            {% endfor %}
+        </select>
+        <label for="note">Note:</label>
+        <input type="text" id="note" name="note">
+        <button type="submit">Record</button>
+    </form>
+</body>

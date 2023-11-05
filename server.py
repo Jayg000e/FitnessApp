@@ -14,6 +14,8 @@ from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, abort,jsonify ,url_for, flash
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
+from datetime import datetime, time
+
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -308,7 +310,6 @@ def worldchannel():
 
 @app.route('/add_friend', methods=['POST'])
 def add_friend():
-    print("hellllllllllllllllll",request.form)
     current_user_username = request.form['currentUser']
     new_friend_username = request.form['newFriendUsername']
     if current_user_username == new_friend_username:
@@ -409,6 +410,209 @@ def add_favorites():
         flash('An error occurred while adding to favorites.', 'error')
     # Redirect back to the exercises page
     return redirect(url_for('exercise', username=username))
+@app.route('/create_exercise', methods=['POST'])
+def create_exercise():
+    
+  exercisename = request.form['exercisename']
+  muscle = request.form['muscle']
+  description = request.form['description']
+  difficulty = request.form['difficulty']
+  
+  try:
+      insert_query = text('''
+          INSERT INTO Exercises (exercisename, muscle, description, difficulty) 
+          VALUES (:exercisename, :muscle, :description, :difficulty)
+      ''')
+      g.conn.execute(insert_query, {
+          "exercisename": exercisename,
+          "muscle": muscle,
+          "description": description,
+          "difficulty": difficulty
+      })
+      g.conn.commit()
+      flash('Exercise created successfully!', 'success')
+  except Exception as e:
+      g.conn.rollback()
+      flash('Error creating exercise: ' + str(e), 'error')
+
+  return redirect(url_for('exercise', username=request.form['username']))
+
+@app.route('/comment', methods=['POST'])
+def comment():
+  print(request.form,"requestttt")
+  recordUser = request.form['recordUser']
+  recordId = request.form['recordId']
+  commentUser = request.form['commentUser']
+  content = request.form['content']
+  try:
+      insert_query = text('''
+          INSERT INTO CommentsMakeCommentsOn (commentuser, recordid, recorduser, content, time) 
+          VALUES (:commentUser, :recordId, :recordUser, :content, :time)
+      ''')
+      g.conn.execute(insert_query, {
+          "commentUser": commentUser,
+          "recordId": recordId,
+          "recordUser": recordUser,
+          "content": content,
+          "time": datetime.utcnow(),
+      })
+      g.conn.commit()
+      flash('Comment successfully!', 'success')
+  except Exception as e:
+      g.conn.rollback()
+      flash('Error commenting: ' + str(e), 'error')
+
+  return redirect(url_for('records', username=request.form['recordUser']))
+
+@app.route('/add_nutrition_record/<username>', methods=['GET', 'POST'])
+def add_nutrition_record(username):
+    
+    if request.method == 'POST':
+        recordkeep_sql = text(
+          "INSERT INTO RecordKeep (username, note, time) "
+          "VALUES (:username, :note, :time) RETURNING recordid"
+        )
+        recordid = g.conn.execute(
+           recordkeep_sql, {
+              "username": username,
+              "note": request.form['note'],
+              "time": datetime.utcnow(),
+           }
+        ).scalar()
+        nutrition_sql = text(
+          "INSERT INTO NutritionRecords (recordid, username, description, calorie, protein) "
+          "VALUES (:recordid, :username, :description, :calorie, :protein)"
+        )
+        g.conn.execute(
+           nutrition_sql, {
+              "recordid": recordid,
+              "username": username,
+              "description": request.form['description'],
+              "calorie": request.form['calorie'],
+              "protein": request.form['protein']
+           }
+        )
+        g.conn.commit()
+        return redirect(url_for('records',username=username))
+    return render_template('nutritionrecord.html',username=username) 
+
+
+
+@app.route('/add_goal_record/<username>', methods=['GET', 'POST'])
+def add_goal_record(username):
+    
+    if request.method == 'POST':
+        recordkeep_sql = text(
+          "INSERT INTO RecordKeep (username, note, time) "
+          "VALUES (:username, :note, :time) RETURNING recordid"
+        )
+        recordid = g.conn.execute(
+           recordkeep_sql, {
+              "username": username,
+              "note": request.form['note'],
+              "time": datetime.utcnow(),
+           }
+        ).scalar()
+        goal_sql = text(
+          "INSERT INTO GoalRecords (recordid, username, goaltype, targetvalue, deadline) "
+          "VALUES (:recordid, :username, :goaltype, :targetvalue, :deadline)"
+        )
+        deadline_date = request.form['deadline_date']
+    
+        # Assume midnight time if only date is provided
+        deadline_time = time(0, 0)  # This sets the time to 00:00 (midnight)
+        
+        # Combine the date and time to form a complete datetime object
+        deadline = datetime.combine(datetime.strptime(deadline_date, '%Y-%m-%d'), deadline_time)
+        
+        # Convert the datetime to a string in the format required by your database
+        deadline_timestamp = deadline.strftime('%Y-%m-%d %H:%M:%S')
+
+        g.conn.execute(
+           goal_sql, {
+              "recordid": recordid,
+              "username": username,
+              "goaltype": request.form['goaltype'],
+              "targetvalue": request.form['targetvalue'],
+              "deadline": deadline_timestamp
+           }
+        )
+        g.conn.commit()
+        return redirect(url_for('records',username=username))
+    return render_template('goalrecord.html',username=username) 
+
+@app.route('/add_health_record/<username>', methods=['GET', 'POST'])
+def add_health_record(username):
+    
+    if request.method == 'POST':
+        recordkeep_sql = text(
+          "INSERT INTO RecordKeep (username, note, time) "
+          "VALUES (:username, :note, :time) RETURNING recordid"
+        )
+        recordid = g.conn.execute(
+           recordkeep_sql, {
+              "username": username,
+              "note": request.form['note'],
+              "time": datetime.utcnow(),
+           }
+        ).scalar()
+        health_sql = text(
+          "INSERT INTO HealthRecords (recordid, username, weight, bodyfatpercentage, bloodpressure, restingheartrate) "
+          "VALUES (:recordid, :username, :weight, :bodyfatpercentage, :bloodpressure, :restingheartrate)"
+        )
+        g.conn.execute(
+           health_sql, {
+              "recordid": recordid,
+              "username": username,
+              "weight": request.form['weight'],
+              "bodyfatpercentage": request.form['bodyfatpercentage'],
+              "bloodpressure": request.form['bloodpressure'],
+              "restingheartrate": request.form['restingheartrate']
+           }
+        )
+        g.conn.commit()
+        return redirect(url_for('records',username=username))
+    return render_template('healthrecord.html',username=username) 
+
+@app.route('/add_workout_record/<username>', methods=['GET', 'POST'])
+def add_workout_record(username):
+    
+    if request.method == 'POST':
+        recordkeep_sql = text(
+          "INSERT INTO RecordKeep (username, note, time) "
+          "VALUES (:username, :note, :time) RETURNING recordid"
+        )
+        recordid = g.conn.execute(
+           recordkeep_sql, {
+              "username": username,
+              "note": request.form['note'],
+              "time": datetime.utcnow(),
+           }
+        ).scalar()
+        workout_sql = text(
+          "INSERT INTO WorkoutRecordsWorkOnExercises (recordid, username, sets, repitition, weightlifted, exercisename) "
+          "VALUES (:recordid, :username, :sets, :repitition, :weightlifted, :exercisename)"
+        )
+        g.conn.execute(
+           workout_sql, {
+              "recordid": recordid,
+              "username": username,
+              "sets": request.form['sets'],
+              "weightlifted": request.form['weightlifted'],
+              "exercisename": request.form['exercisename'],
+              "repitition": request.form['repetition'],
+           }
+        )
+        g.conn.commit()
+        return redirect(url_for('records',username=username))
+    else:
+      exercises=g.conn.execute(
+           text("SELECT * from Exercises")
+        ).fetchall()
+      return render_template('workoutrecord.html',username=username,exercises=exercises) 
+
+
+
 
 if __name__ == "__main__":
   import click

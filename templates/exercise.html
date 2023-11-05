@@ -3,6 +3,7 @@
     <title>{{ username }}'s Exercises</title>
 </head>
 <body>
+    <p><a href="/">Home</a></p>
     <h1>{{ username }}'s Favorite Exercises</h1>
     {% for exercise in favorite_exercises %}
         <div>
@@ -11,7 +12,7 @@
         </div>
     {% endfor %}
 
-    <h2>Other Exercises</h2>
+    <h1>Other Exercises</h1>
     <form action="/add_favorites" method="post">
         {% for exercise in non_favorite_exercises %}
             <div>
@@ -22,6 +23,24 @@
         {% endfor %}
         <input type="hidden" name="username" value="{{ username }}">
         <input type="submit" value="Add to Favorites">
+    </form>
+
+    <h1>Create New Exercise</h1>
+    <form action="{{ url_for('create_exercise') }}" method="post">
+        <input type="hidden" name="username" value="{{ username }}">
+        <label for="exercisename">Exercise Name:</label>
+        <input type="text" id="exercisename" name="exercisename" required>
+        
+        <label for="muscle">Target Muscle:</label>
+        <input type="text" id="muscle" name="muscle" required>
+        
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea>
+        
+        <label for="difficulty">Difficulty (1-10):</label>
+        <input type="number" id="difficulty" name="difficulty" min="1" max="10" required>
+        
+        <input type="submit" value="Create Exercise">
     </form>
 </body>
 

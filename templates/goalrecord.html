@@ -1,0 +1,13 @@
+<body>
+    <form action="{{ url_for('add_goal_record', username = username) }}"  method="post">
+        <label for="goaltype">goaltype:</label>
+        <input type="text" id="goaltype" name="goaltype">
+        <label for="deadline_date">Deadline Date:</label>
+        <input type="date" id="deadline_date" name="deadline_date" required>
+        <label for="targetvalue">targetvalue:</label>
+        <input type="text" id="targetvalue" name="targetvalue" required>
+        <label for="note">Note:</label>
+        <input type="text" id="note" name="note">
+        <button type="submit">Record</button>
+    </form>
+</body>
