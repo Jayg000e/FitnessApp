@@ -7,8 +7,8 @@
     <h1>Groups</h1>
     <ul>
         {% for group in user_groups %}
-            <li>{{ group.groupname }} (ID: {{ group.groupid }}) - 
-                <a href="{{ url_for('group', groupid=group.groupid) }}">View Group</a>
+            <li>
+                <a href="{{ url_for('group', groupid=group.groupid) }}">{{ group.groupname }} (ID: {{ group.groupid }}) </a>
             </li>
         {% else %}
             <li>No groups found.</li>

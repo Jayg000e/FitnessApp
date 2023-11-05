@@ -204,7 +204,69 @@ def group(groupid):
         """)
         users = g.conn.execute(users_query, {"groupid": groupid})
         users = users.fetchall()
-        return render_template('group.html', users=users, groupid=groupid, groupname=group_name[0])
+
+        user_records = {
+            'workout_records': [],
+            'nutrition_records': [],
+            'health_records': [],
+            'goal_records': []
+        }
+        
+        # Retrieve workout records
+        workout_records_query = text("""
+            SELECT wr.*, e.exercisename
+            FROM WorkoutRecordsWorkOnExercises wr
+            JOIN Exercises e ON wr.exercisename = e.exercisename
+            WHERE wr.username IN (SELECT ug.username FROM UsersInGroups ug WHERE ug.groupid = :groupid)
+        """)
+        workout_records_result = g.conn.execute(workout_records_query, {"groupid": groupid})
+        user_records['workout_records'] = workout_records_result.fetchall()
+        
+        # Retrieve nutrition records
+        nutrition_records_query = text("""
+            SELECT *
+            FROM NutritionRecords
+            WHERE username IN (SELECT ug.username FROM UsersInGroups ug WHERE ug.groupid = :groupid)
+        """)
+        nutrition_records_result = g.conn.execute(nutrition_records_query, {"groupid": groupid})
+        user_records['nutrition_records'] = nutrition_records_result.fetchall()
+
+        # Retrieve health records
+        health_records_query = text("""
+            SELECT *
+            FROM HealthRecords
+            WHERE username IN (SELECT ug.username FROM UsersInGroups ug WHERE ug.groupid = :groupid)
+        """)
+        health_records_result = g.conn.execute(health_records_query, {"groupid": groupid})
+        user_records['health_records'] = health_records_result.fetchall()
+
+        # Retrieve goal records
+        goal_records_query = text("""
+            SELECT *
+            FROM GoalRecords
+            WHERE username IN (SELECT ug.username FROM UsersInGroups ug WHERE ug.groupid = :groupid)
+        """)
+        goal_records_result = g.conn.execute(goal_records_query, {"groupid": groupid})
+        user_records['goal_records'] = goal_records_result.fetchall()
+
+        for record_type, records in user_records.items():
+          transformed_records=[]
+          for record in records:
+              # Fetch the comments for each record
+              comments_query = text("""
+                  SELECT *
+                  FROM CommentsMakeCommentsOn c
+                  WHERE c.recordid = :recordid AND c.recorduser = :username
+                  ORDER BY c.time DESC
+              """)
+              print(record.recordid,record.username)
+              comments_result = g.conn.execute(comments_query, {
+                  "recordid": record.recordid,
+                  "username": record.username  
+              })
+              transformed_records.append((record,comments_result.fetchall()))
+          user_records[record_type]=transformed_records
+        return render_template('group.html', users=users, groupid=groupid, groupname=group_name[0],records=user_records)
     
 @app.route('/records/<username>')
 def records(username):
@@ -276,38 +338,78 @@ def records(username):
 
 @app.route('/worldchannel') 
 def worldchannel(): 
-    # Retrieve all records for the given username
-    records_query = text("""
-    SELECT rk.recordid, rk.note, rk.time, rk.username
-    FROM RecordKeep rk
-    ORDER BY rk.time DESC;
-    """)
-    records = g.conn.execute(records_query)
-    records = records.fetchall()
+    # Create a dictionary to hold all the user's records
+  user_records = {
+      'workout_records': [],
+      'nutrition_records': [],
+      'health_records': [],
+      'goal_records': []
+  }
+  
+  # Retrieve workout records
+  workout_records_query = text("""
+      SELECT wr.*, e.exercisename
+      FROM WorkoutRecordsWorkOnExercises wr
+      JOIN Exercises e ON wr.exercisename = e.exercisename
+      JOIN RecordKeep rk ON wr.username = rk.username AND wr.recordid = rk.recordid
+      ORDER BY rk.time DESC
+      LIMIT 5
+  """)
+  workout_records_result = g.conn.execute(workout_records_query)
+  user_records['workout_records'] = workout_records_result.fetchall()
+  
+  # Retrieve nutrition records
+  nutrition_records_query = text("""
+      SELECT *
+      FROM NutritionRecords nr
+      JOIN RecordKeep rk ON nr.username = rk.username AND nr.recordid = rk.recordid
+      ORDER BY rk.time DESC
+      LIMIT 5
+                                 
+  """)
+  nutrition_records_result = g.conn.execute(nutrition_records_query)
+  user_records['nutrition_records'] = nutrition_records_result.fetchall()
 
-    # For each record, fetch the associated comments
-    comments_query_template = text("""
-    SELECT cm.*
-    FROM CommentsMakeCommentsOn cm
-    WHERE cm.recordid = :recordid AND cm.recorduser = :username
-    ORDER BY cm.time DESC;
-    """)
+  # Retrieve health records
+  health_records_query = text("""
+      SELECT *
+      FROM HealthRecords hr
+      JOIN RecordKeep rk ON hr.username = rk.username AND hr.recordid = rk.recordid
+      ORDER BY rk.time DESC
+      LIMIT 5
+  """)
+  health_records_result = g.conn.execute(health_records_query)
+  user_records['health_records'] = health_records_result.fetchall()
 
-    # Create a dictionary to hold records and their comments
-    records_with_comments = []
+  # Retrieve goal records
+  goal_records_query = text("""
+      SELECT *
+      FROM GoalRecords gr
+      JOIN RecordKeep rk ON gr.username = rk.username AND gr.recordid = rk.recordid
+      ORDER BY rk.time DESC
+      LIMIT 5
+  """)
+  goal_records_result = g.conn.execute(goal_records_query)
+  user_records['goal_records'] = goal_records_result.fetchall()
+
+  for record_type, records in user_records.items():
+    transformed_records=[]
     for record in records:
-        # Fetch comments for the current record
-        comments_result = g.conn.execute(comments_query_template, {
+        # Fetch the comments for each record
+        comments_query = text("""
+            SELECT *
+            FROM CommentsMakeCommentsOn c
+            WHERE c.recordid = :recordid AND c.recorduser = :username
+            ORDER BY c.time DESC
+        """)
+        print(record.recordid,record.username)
+        comments_result = g.conn.execute(comments_query, {
             "recordid": record.recordid,
-            "username": record.username  # assuming 'username' is the same for RecordKeep and CommentsMakeCommentsOn
+            "username": record.username  
         })
-        comments = comments_result.fetchall()
-        
-        # Append the record and its comments as a tuple to the list
-        records_with_comments.append((record, comments))
-
-    # Pass the list of records with their comments to the template
-    return render_template('worldchannel.html', records_with_comments=records_with_comments)
+        transformed_records.append((record,comments_result.fetchall()))
+    user_records[record_type]=transformed_records
+  return render_template('worldchannel.html', records=user_records)
 
 @app.route('/add_friend', methods=['POST'])
 def add_friend():

@@ -1,17 +1,70 @@
 <body>
     <p><a href="/">Home</a></p>
-    {% for record, comments in records_with_comments %}
-        <div class="record">
-            <h3>Record ID: {{ record.recordid }} - Note: {{ record.note }}</h3>
-            <p>Time: {{ record.time }}</p>
-            <h4>Comments:</h4>
+    <h1>Most Recent Record from All members in the fitness community</h1>
+    <h2>Workout Records</h2>
+    <ul>
+        {% for record,comments in records.workout_records %}
+            
+            <li>{{record.username}}'s record: {{ record.exercisename }}: {{ record.sets }} sets of {{ record.repitition }} reps at {{ record.weightlifted }} kg</li>
             <ul>
                 {% for comment in comments %}
                     <li>
-                        <strong>{{ comment.commentuser }}</strong> ({{ comment.time }}): {{ comment.content }}
+                        <strong>{{ comment.commentuser }}:</strong>
+                        <p>{{ comment.content }}</p>
+                        <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                     </li>
                 {% endfor %}
             </ul>
-        </div>
-    {% endfor %}
+        {% endfor %}
+    </ul>
+
+    <h2>Nutrition Records</h2>
+    <ul>
+        {% for record,comments in records.nutrition_records %}
+            <li>{{record.username}}'s record: {{ record.description }}: {{ record.calorie }} calories, {{ record.protein }}g protein</li>
+            <ul>
+                {% for comment in comments %}
+                    <li>
+                        <strong>{{ comment.commentuser }}:</strong>
+                        <p>{{ comment.content }}</p>
+                        <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
+
+    <h2>Health Records</h2>
+    <ul>
+        {% for record,comments in records.health_records %}
+            <li>{{record.username}}'s record: Weight: {{ record.weight }} kg, Body Fat: {{ record.bodyfatpercentage }}%, Blood Pressure: {{ record.bloodpressure }}, Resting Heart Rate: {{ record.restingheartrate }} bpm</li>
+            <ul>
+                {% for comment in comments %}
+                    <li>
+                        <strong>{{ comment.commentuser }}:</strong>
+                        <p>{{ comment.content }}</p>
+                        <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        
+        {% endfor %}  
+
+    </ul>
+
+    <h2>Goal Records</h2>
+    <ul>
+        {% for record,comments in records.goal_records %}
+            <li>{{record.username}}'s record: {{ record.goaltype }}: Target {{ record.targetvalue }} by {{ record.deadline.strftime('%Y-%m-%d') }}</li>
+            <ul>
+                {% for comment in comments %}
+                    <li>
+                        <strong>{{ comment.commentuser }}:</strong>
+                        <p>{{ comment.content }}</p>
+                        <p>Commented on: {{ comment.time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
 </body>

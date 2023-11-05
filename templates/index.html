@@ -9,11 +9,11 @@
   <button id="logoutButton">Log Out</button>
 
   <p><a id="profileLink" href="#">Profile Page</a></p>
-  <p><a id="friendLink" href="#">Friend Page</a></p>
-  <p><a id="usergroupLink" href="#">Group Page</a></p>
   <p><a id="exerciseLink" href="#">Exercise Page</a></p>
   <p><a id="recordLink" href="#">Record Page</a></p>
-  <p><a href="worldchannel">worldchannel</a></p>
+  <p><a id="friendLink" href="#">Friend Page</a></p>
+  <p><a id="usergroupLink" href="#">Group Page</a></p>
+  <p><a href="worldchannel">World Channel</a></p>
 
 
 </body>
@@ -26,10 +26,12 @@
         $('#greeting').text('Dear ' + username + ', you are logged in');
         var encodedUsername = encodeURIComponent(username);
         $('#profileLink').attr('href', '/profile/' + encodedUsername);
-        $('#friendLink').attr('href', '/friend/' + encodedUsername);
-        $('#usergroupLink').attr('href', '/usergroup/' + encodedUsername);
         $('#exerciseLink').attr('href', '/exercise/' + encodedUsername);
         $('#recordLink').attr('href', '/records/' + encodedUsername);
+        $('#friendLink').attr('href', '/friend/' + encodedUsername);
+        $('#usergroupLink').attr('href', '/usergroup/' + encodedUsername);
+        
+        
     }else{
       window.location.href = '/login';
     }
